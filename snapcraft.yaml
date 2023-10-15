@@ -3,8 +3,8 @@
 # SPDX-FileCopyrightText: 2023 林博仁(Buo-ren, Lin) <Buo.Ren.Lin@gmail.com>
 # SPDX-License-Identifier: MPL-2.0
 
-name: ocrmypdf
-title: OCRmyPDF
+name: ocrmypdf-digidigital
+title: OCRmyPDF used by OCRthyPDF
 base: core22
 version: git
 summary: OCRmyPDF adds a searchable text layer to scanned PDF files
@@ -16,8 +16,14 @@ license: MPL-2.0
 
 architectures: [amd64]
 
+#added
+package-repositories:
+ - type: apt
+   ppa: alex-p/tesseract-ocr5
+
 environment:
-  TESSDATA_PREFIX: $SNAP/usr/share/tesseract-ocr/4.00/tessdata
+  #TESSDATA_PREFIX: $SNAP/usr/share/tesseract-ocr/4.00/tessdata
+  TESSDATA_PREFIX: $SNAP/usr/share/tesseract-ocr/tessdata
   GS_LIB: $SNAP/usr/share/ghostscript/9.55/Resource/Init
   GS_FONTPATH: $SNAP/usr/share/ghostscript/9.55/Resource/Font
   LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu
@@ -53,6 +59,26 @@ parts:
     build-packages:
       - libleptonica-dev
 
+  tesseract:
+    plugin: nil
+
+    stage-packages: 
+      - tesseract-ocr-all
+ 
+    build-packages: 
+      - curl
+
+    override-prime: |
+      snapcraftctl prime
+
+      tessdatapath=$(find ./ -iname tessdata)                                  
+      ln -s -f ${tessdatapath/usr\/share\/tesseract-ocr\//} ${tessdatapath}/../../tessdata
+      
+      curl --output "${tessdatapath}/best-#1.traineddata" "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/{deu,eng,fra,spa,por,ita,rus,ukr,jpn,jpn_vert,ara,hin,pol}.traineddata" 
+
+      # debug
+      ls -l ${tessdatapath}
+
   ocrmypdf:
     plugin: python
     source: .
@@ -66,7 +92,8 @@ parts:
       - liblept5
       - libxml2
       - pngquant
-      - tesseract-ocr-all
+      # moved to tesseract part
+      # - tesseract-ocr-all
       - unpaper
       - qpdf
       - zlib1g
